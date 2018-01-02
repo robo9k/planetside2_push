@@ -1,6 +1,7 @@
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
 
 use std::collections::HashSet;
@@ -21,21 +22,26 @@ pub enum Environment {
     Ps4Eu,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 pub enum Service {
     Event,
     Push,
 }
 
+#[derive(Serialize)]
 pub enum CharacterSubscription {
     All,
     Ids(HashSet<CharacterId>),
 }
 
+#[derive(Serialize)]
 pub enum WorldSubscription {
     All,
     Ids(HashSet<WorldId>),
 }
 
+#[derive(Serialize, PartialEq, Eq, Hash)]
 pub enum EventNames {
     AchievementEarned,
     BattleRankUp,
@@ -55,11 +61,14 @@ pub enum EventNames {
     PlayerLogout,
 }
 
+#[derive(Serialize)]
 pub enum EventSubscription {
     All,
     Ids(HashSet<EventNames>),
 }
 
+#[derive(Serialize)]
+#[serde(tag = "action", rename_all = "camelCase")]
 enum Action {
     Echo {
         payload: serde_json::Value,
@@ -89,8 +98,26 @@ enum Action {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn serialize_echo_action() {
+        let input = Action::Echo {
+            payload: json!({
+                "test": "test"
+            }),
+            service: Service::Event,
+        };
+        let v = serde_json::to_value(input).unwrap();
+
+        let expected = json!({
+            "service": "event",
+            "action": "echo",
+            "payload": {
+                "test": "test"
+            }
+        });
+
+        assert_eq!(v, expected);
     }
 }
