@@ -87,10 +87,11 @@ pub enum Action {
     },
     #[serde(rename_all = "camelCase")]
     Subscribe {
-        event_names: Option<EventSubscription>,
-        characters: Option<CharacterSubscription>,
+        #[serde(skip_serializing_if = "Option::is_none")] event_names: Option<EventSubscription>,
+        #[serde(skip_serializing_if = "Option::is_none")] characters: Option<CharacterSubscription>,
+        #[serde(skip_serializing_if = "Option::is_none")]
         logical_and_characters_with_worlds: Option<bool>,
-        worlds: Option<WorldSubscription>,
+        #[serde(skip_serializing_if = "Option::is_none")] worlds: Option<WorldSubscription>,
         service: Service,
     },
     #[serde(rename_all = "camelCase")]
@@ -172,6 +173,125 @@ mod tests {
     }
 
     #[test]
+    fn serialize_subscribe_character_death_action() {
+        let input = Action::Subscribe {
+            event_names: Some(EventSubscription::Ids(vec![EventNames::Death])),
+            characters: Some(CharacterSubscription::Ids(vec![5428010618015189713])),
+            logical_and_characters_with_worlds: None,
+            worlds: None,
+            service: Service::Event,
+        };
+        let v = serde_json::to_value(input).unwrap();
+
+        let expected = json!({
+            "service": "event",
+            "action": "subscribe",
+            "eventNames": [ "Death" ],
+            "characters": [ "5428010618015189713" ]
+        });
+
+        assert_eq!(v, expected);
+    }
+
+    #[test]
+    fn serialize_subscribe_world_event_action() {
+        let input = Action::Subscribe {
+            event_names: Some(EventSubscription::Ids(vec![EventNames::PlayerLogin])),
+            characters: None,
+            logical_and_characters_with_worlds: None,
+            worlds: Some(WorldSubscription::Ids(vec![WorldIds::Connery as WorldId])),
+            service: Service::Event,
+        };
+        let v = serde_json::to_value(input).unwrap();
+
+        let expected = json!({
+            "service": "event",
+            "action": "subscribe",
+            "eventNames": [ "PlayerLogin" ],
+            "worlds": [ "1" ]
+        });
+
+        assert_eq!(v, expected);
+    }
+
+    #[test]
+    fn serialize_subscribe_all_action() {
+        let input = Action::Subscribe {
+            event_names: Some(EventSubscription::All),
+            characters: Some(CharacterSubscription::All),
+            logical_and_characters_with_worlds: None,
+            worlds: Some(WorldSubscription::All),
+            service: Service::Event,
+        };
+        let v = serde_json::to_value(input).unwrap();
+
+        let expected = json!({
+            "service": "event",
+            "action": "subscribe",
+            "eventNames": [ "all" ],
+            "characters": [ "all" ],
+            "worlds": [ "all" ]
+        });
+
+        assert_eq!(v, expected);
+    }
+
+    #[test]
+    fn serialize_subscribe_action() {
+        let input = Action::Subscribe {
+            event_names: Some(EventSubscription::Ids(vec![
+                EventNames::PlayerLogin,
+                EventNames::MetagameEvent,
+                EventNames::BattleRankUp,
+                EventNames::FacilityControl,
+                EventNames::ItemAdded,
+                EventNames::VehicleDestroy,
+                EventNames::PlayerFacilityCapture,
+                EventNames::PlayerFacilityDefend,
+                EventNames::SkillAdded,
+                EventNames::GainExperience,
+                EventNames::Death,
+                EventNames::PlayerLogout,
+            ])),
+            characters: Some(CharacterSubscription::All),
+            logical_and_characters_with_worlds: Some(true),
+            worlds: Some(WorldSubscription::Ids(vec![
+                WorldIds::Cobalt as WorldId,
+                WorldIds::Jaeger as WorldId,
+            ])),
+            service: Service::Event,
+        };
+        let v = serde_json::to_value(input).unwrap();
+
+        let expected = json!({
+            "service": "event",
+            "action": "subscribe",
+            "eventNames": [
+                "PlayerLogin",
+                "MetagameEvent",
+                "BattleRankUp",
+                "FacilityControl",
+                "ItemAdded",
+                "VehicleDestroy",
+                "PlayerFacilityCapture",
+                "PlayerFacilityDefend",
+                "SkillAdded",
+                "GainExperience",
+                "Death",
+                "PlayerLogout"
+            ],
+            "characters": [ "all" ],
+            "logicalAndCharactersWithWorlds": true,
+            "worlds": [
+                "13",
+                "19"
+            ]
+        });
+
+        assert_eq!(v, expected);
+    }
+
+    #[test]
     fn serialize_clearsubscribe_action() {
         let input = Action::ClearSubscribe {
             all: None,
@@ -197,7 +317,7 @@ mod tests {
             service: Service::Event,
         };
         let v = serde_json::to_value(input).unwrap();
-        println!("{}", serde_json::to_string_pretty(&v).unwrap());
+
         let expected = json!({
             "service": "event",
             "action": "clearSubscribe",
@@ -205,7 +325,7 @@ mod tests {
                 "1",
                 "2"
 		    ],
-            "eventNames":[
+            "eventNames": [
                 "PlayerLogin",
                 "MetagameEvent",
                 "BattleRankUp",
@@ -219,12 +339,12 @@ mod tests {
                 "Death",
                 "PlayerLogout"
             ],
-            "worlds":[
+            "worlds": [
                 "13",
                 "19"
             ]
         });
-        println!("{}", serde_json::to_string_pretty(&expected).unwrap());
+
         assert_eq!(v, expected);
     }
 
@@ -249,7 +369,7 @@ mod tests {
     }
 
     #[test]
-    fn serialize_recentcharaterids_action() {
+    fn serialize_recentcharacterids_action() {
         let input = Action::RecentCharacterIds {
             service: Service::Event,
         };
@@ -264,7 +384,7 @@ mod tests {
     }
 
     #[test]
-    fn serialize_recentcharateridscount_action() {
+    fn serialize_recentcharacteridscount_action() {
         let input = Action::RecentCharacterIdsCount {
             service: Service::Event,
         };
