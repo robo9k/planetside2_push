@@ -146,6 +146,7 @@ where
 }
 
 #[cfg(test)]
+// TODO: Replace `assert_eq!(.., json!())` with https://docs.serde.rs/serde_test/
 mod tests {
     use super::*;
 
