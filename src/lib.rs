@@ -48,6 +48,7 @@ pub enum WorldIds {
 #[serde(untagged)]
 pub enum WorldSubscription {
     #[serde(serialize_with = "serialize_all_subscription")] All,
+    // TODO: WorldIds enum instead of WorldId u64?
     #[serde(serialize_with = "serialize_ids_subscription")] Ids(Vec<WorldId>),
 }
 
