@@ -82,10 +82,10 @@ enum Action {
         service: Service,
     },
     ClearSubscribe {
-        all: Option<bool>,
-        event_names: Option<EventSubscription>,
-        characters: Option<CharacterSubscription>,
-        worlds: Option<WorldSubscription>,
+        #[serde(with = "optional_bool")] all: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none")] event_names: Option<EventSubscription>,
+        #[serde(skip_serializing_if = "Option::is_none")] characters: Option<CharacterSubscription>,
+        #[serde(skip_serializing_if = "Option::is_none")] worlds: Option<WorldSubscription>,
         service: Service,
     },
     RecentCharacterIds {
@@ -94,6 +94,23 @@ enum Action {
     RecentCharacterIdsCount {
         service: Service,
     },
+}
+
+mod optional_bool {
+    use serde::Serializer;
+
+    pub fn serialize<S>(value: &Option<bool>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match *value {
+            None => serializer.serialize_none(),
+            Some(value) => match value {
+                true => serializer.serialize_str("true"),
+                false => serializer.serialize_str("false"),
+            },
+        }
+    }
 }
 
 #[cfg(test)]
@@ -116,6 +133,26 @@ mod tests {
             "payload": {
                 "test": "test"
             }
+        });
+
+        assert_eq!(v, expected);
+    }
+
+    #[test]
+    fn serialize_clearsubscribe_all_action() {
+        let input = Action::ClearSubscribe {
+            all: Some(true),
+            event_names: None,
+            characters: None,
+            worlds: None,
+            service: Service::Event,
+        };
+        let v = serde_json::to_value(input).unwrap();
+
+        let expected = json!({
+            "service": "event",
+            "action": "clearSubscribe",
+            "all": "true"
         });
 
         assert_eq!(v, expected);
