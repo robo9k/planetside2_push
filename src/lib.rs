@@ -1,3 +1,8 @@
+extern crate serde;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde_json;
+
 use std::collections::HashSet;
 
 pub type Id = u64;
@@ -56,11 +61,10 @@ pub enum EventSubscription {
 }
 
 enum Action {
-    /*
     Echo {
+        payload: serde_json::Value,
         service: Service,
     },
-    */
     Subscribe {
         event_names: Option<EventSubscription>,
         characters: Option<CharacterSubscription>,
@@ -75,14 +79,12 @@ enum Action {
         worlds: Option<WorldSubscription>,
         service: Service,
     },
-    /*
     RecentCharacterIds {
         service: Service,
     },
     RecentCharacterIdsCount {
         service: Service,
     },
-    */
 }
 
 #[cfg(test)]
