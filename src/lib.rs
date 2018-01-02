@@ -51,7 +51,7 @@ pub enum WorldSubscription {
     #[serde(serialize_with = "serialize_ids_subscription")] Ids(Vec<WorldId>),
 }
 
-#[derive(Serialize, PartialEq, Eq, Hash)]
+#[derive(PartialEq, Eq, Hash)]
 pub enum EventNames {
     AchievementEarned,
     BattleRankUp,
@@ -146,6 +146,48 @@ where
     serializer.collect_seq(ids.iter())
 }
 
+impl serde::Serialize for EventNames {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use EventNames::*;
+
+        match *self {
+            AchievementEarned => {
+                serializer.serialize_unit_variant("EventNames", 0, "AchievementEarned")
+            }
+            BattleRankUp => serializer.serialize_unit_variant("EventNames", 1, "BattleRankUp"),
+            Death => serializer.serialize_unit_variant("EventNames", 2, "Death"),
+            ItemAdded => serializer.serialize_unit_variant("EventNames", 3, "ItemAdded"),
+            SkillAdded => serializer.serialize_unit_variant("EventNames", 4, "SkillAdded"),
+            VehicleDestroy => serializer.serialize_unit_variant("EventNames", 5, "VehicleDestroy"),
+            GainExperience => serializer.serialize_unit_variant("EventNames", 6, "GainExperience"),
+            GainExperienceId(value) => {
+                let event_name = format!("GainExperience_experience_id_{}", value);
+
+                serializer.serialize_str(&event_name)
+            }
+            PlayerFacilityCapture => {
+                serializer.serialize_unit_variant("EventNames", 8, "PlayerFacilityCapture")
+            }
+            PlayerFacilityDefend => {
+                serializer.serialize_unit_variant("EventNames", 9, "PlayerFacilityDefend")
+            }
+            ContinentLock => serializer.serialize_unit_variant("EventNames", 10, "ContinentLock"),
+            ContinentUnlock => {
+                serializer.serialize_unit_variant("EventNames", 11, "ContinentUnlock")
+            }
+            FacilityControl => {
+                serializer.serialize_unit_variant("EventNames", 12, "FacilityControl")
+            }
+            MetagameEvent => serializer.serialize_unit_variant("EventNames", 13, "MetagameEvent"),
+            PlayerLogin => serializer.serialize_unit_variant("EventNames", 14, "PlayerLogin"),
+            PlayerLogout => serializer.serialize_unit_variant("EventNames", 15, "PlayerLogout"),
+        }
+    }
+}
+
 #[cfg(test)]
 // TODO: Replace `assert_eq!(.., json!())` with https://docs.serde.rs/serde_test/
 mod tests {
@@ -167,6 +209,33 @@ mod tests {
             "payload": {
                 "test": "test"
             }
+        });
+
+        assert_eq!(v, expected);
+    }
+
+    #[test]
+    fn serialize_subscribe_gainexperienceid_event_action() {
+        let input = Action::Subscribe {
+            event_names: Some(EventSubscription::Ids(vec![
+                EventNames::GainExperienceId(4),
+                EventNames::GainExperienceId(5),
+            ])),
+            characters: Some(CharacterSubscription::All),
+            logical_and_characters_with_worlds: None,
+            worlds: None,
+            service: Service::Event,
+        };
+        let v = serde_json::to_value(input).unwrap();
+
+        let expected = json!({
+            "service": "event",
+            "action": "subscribe",
+            "eventNames": [
+                "GainExperience_experience_id_4",
+                "GainExperience_experience_id_5"
+            ],
+            "characters": [ "all" ]
         });
 
         assert_eq!(v, expected);
