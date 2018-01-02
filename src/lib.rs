@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate maplit;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -30,15 +32,27 @@ pub enum Service {
 }
 
 #[derive(Serialize)]
+#[serde(untagged)]
 pub enum CharacterSubscription {
-    All,
-    Ids(HashSet<CharacterId>),
+    #[serde(serialize_with = "serialize_all_subscription")] All,
+    #[serde(serialize_with = "serialize_ids_subscription")] Ids(HashSet<CharacterId>),
+}
+
+#[repr(u64)]
+pub enum WorldIds {
+    Jaeger = 19,
+    Briggs = 25,
+    Miller = 10,
+    Cobalt = 13,
+    Connery = 1,
+    Emerald = 17,
 }
 
 #[derive(Serialize)]
+#[serde(untagged)]
 pub enum WorldSubscription {
-    All,
-    Ids(HashSet<WorldId>),
+    #[serde(serialize_with = "serialize_all_subscription")] All,
+    #[serde(serialize_with = "serialize_ids_subscription")] Ids(HashSet<WorldId>),
 }
 
 #[derive(Serialize, PartialEq, Eq, Hash)]
@@ -62,8 +76,9 @@ pub enum EventNames {
 }
 
 #[derive(Serialize)]
+#[serde(untagged)]
 pub enum EventSubscription {
-    All,
+    #[serde(serialize_with = "serialize_all_subscription")] All,
     Ids(HashSet<EventNames>),
 }
 
@@ -74,6 +89,7 @@ enum Action {
         payload: serde_json::Value,
         service: Service,
     },
+    #[serde(rename_all = "camelCase")]
     Subscribe {
         event_names: Option<EventSubscription>,
         characters: Option<CharacterSubscription>,
@@ -81,8 +97,11 @@ enum Action {
         worlds: Option<WorldSubscription>,
         service: Service,
     },
+    #[serde(rename_all = "camelCase")]
     ClearSubscribe {
-        #[serde(with = "optional_bool")] all: Option<bool>,
+        #[serde(skip_serializing_if = "Option::is_none",
+                serialize_with = "serialize_optional_bool")]
+        all: Option<bool>,
         #[serde(skip_serializing_if = "Option::is_none")] event_names: Option<EventSubscription>,
         #[serde(skip_serializing_if = "Option::is_none")] characters: Option<CharacterSubscription>,
         #[serde(skip_serializing_if = "Option::is_none")] worlds: Option<WorldSubscription>,
@@ -96,21 +115,40 @@ enum Action {
     },
 }
 
-mod optional_bool {
-    use serde::Serializer;
-
-    pub fn serialize<S>(value: &Option<bool>, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match *value {
-            None => serializer.serialize_none(),
-            Some(value) => match value {
-                true => serializer.serialize_str("true"),
-                false => serializer.serialize_str("false"),
-            },
-        }
+fn serialize_optional_bool<S>(value: &Option<bool>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    match *value {
+        None => serializer.serialize_none(),
+        Some(value) => match value {
+            true => serializer.serialize_str("true"),
+            false => serializer.serialize_str("false"),
+        },
     }
+}
+
+fn serialize_all_subscription<S>(serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    use serde::Serialize;
+
+    json!(["all"]).serialize(serializer)
+}
+
+fn serialize_ids_subscription<S>(value: &HashSet<Id>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: serde::Serializer,
+{
+    use std::collections::HashSet;
+
+    let mut ids = HashSet::with_capacity(value.len());
+    for id in value.iter() {
+        ids.insert(id.to_string());
+    }
+
+    serializer.collect_seq(ids.iter())
 }
 
 #[cfg(test)]
@@ -135,6 +173,64 @@ mod tests {
             }
         });
 
+        assert_eq!(v, expected);
+    }
+
+    #[test]
+    fn serialize_clearsubscribe_action() {
+        // FIXME: This is sensitive to order of HashSet / JSON array
+        let input = Action::ClearSubscribe {
+            all: None,
+            event_names: Some(EventSubscription::Ids(hashset!{
+                EventNames::PlayerLogin,
+                EventNames::MetagameEvent,
+                EventNames::BattleRankUp,
+                EventNames::FacilityControl,
+                EventNames::ItemAdded,
+                EventNames::VehicleDestroy,
+                EventNames::PlayerFacilityCapture,
+                EventNames::PlayerFacilityDefend,
+                EventNames::SkillAdded,
+                EventNames::GainExperience,
+                EventNames::Death,
+                EventNames::PlayerLogout,
+            })),
+            characters: Some(CharacterSubscription::Ids(hashset!{1, 2})),
+            worlds: Some(WorldSubscription::Ids(hashset!{
+                WorldIds::Cobalt as WorldId,
+                WorldIds::Jaeger as WorldId,
+            })),
+            service: Service::Event,
+        };
+        let v = serde_json::to_value(input).unwrap();
+        println!("{}", serde_json::to_string_pretty(&v).unwrap());
+        let expected = json!({
+            "service": "event",
+            "action": "clearSubscribe",
+            "characters": [
+                "1",
+                "2"
+		    ],
+            "eventNames":[
+                "PlayerLogin",
+                "MetagameEvent",
+                "BattleRankUp",
+                "FacilityControl",
+                "ItemAdded",
+                "VehicleDestroy",
+                "PlayerFacilityCapture",
+                "PlayerFacilityDefend",
+                "SkillAdded",
+                "GainExperience",
+                "Death",
+                "PlayerLogout"
+            ],
+            "worlds":[
+                "13",
+                "19"
+            ]
+        });
+        println!("{}", serde_json::to_string_pretty(&expected).unwrap());
         assert_eq!(v, expected);
     }
 

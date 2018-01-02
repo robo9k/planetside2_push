@@ -7,3 +7,4 @@ authors = ["robo9k <robo@9k.lv>"]
 serde = "1.0"
 serde_derive = "1.0"
 serde_json = "1.0"
+maplit = "1.0"
