@@ -120,4 +120,35 @@ mod tests {
 
         assert_eq!(v, expected);
     }
+
+    #[test]
+    fn serialize_recentcharaterids_action() {
+        let input = Action::RecentCharacterIds {
+            service: Service::Event,
+        };
+        let v = serde_json::to_value(input).unwrap();
+
+        let expected = json!({
+            "service": "event",
+            "action": "recentCharacterIds"
+        });
+
+        assert_eq!(v, expected);
+    }
+
+    #[test]
+    fn serialize_recentcharateridscount_action() {
+        let input = Action::RecentCharacterIdsCount {
+            service: Service::Event,
+        };
+        let v = serde_json::to_value(input).unwrap();
+
+        let expected = json!({
+            "service": "event",
+            "action": "recentCharacterIdsCount"
+        });
+
+        assert_eq!(v, expected);
+    }
+
 }
