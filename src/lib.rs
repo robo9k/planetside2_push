@@ -1,12 +1,8 @@
-#[macro_use]
-extern crate maplit;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 #[macro_use]
 extern crate serde_json;
-
-use std::collections::HashSet;
 
 pub type Id = u64;
 pub type CharacterId = Id;
@@ -35,7 +31,7 @@ pub enum Service {
 #[serde(untagged)]
 pub enum CharacterSubscription {
     #[serde(serialize_with = "serialize_all_subscription")] All,
-    #[serde(serialize_with = "serialize_ids_subscription")] Ids(HashSet<CharacterId>),
+    #[serde(serialize_with = "serialize_ids_subscription")] Ids(Vec<CharacterId>),
 }
 
 #[repr(u64)]
@@ -52,7 +48,7 @@ pub enum WorldIds {
 #[serde(untagged)]
 pub enum WorldSubscription {
     #[serde(serialize_with = "serialize_all_subscription")] All,
-    #[serde(serialize_with = "serialize_ids_subscription")] Ids(HashSet<WorldId>),
+    #[serde(serialize_with = "serialize_ids_subscription")] Ids(Vec<WorldId>),
 }
 
 #[derive(Serialize, PartialEq, Eq, Hash)]
@@ -79,12 +75,12 @@ pub enum EventNames {
 #[serde(untagged)]
 pub enum EventSubscription {
     #[serde(serialize_with = "serialize_all_subscription")] All,
-    Ids(HashSet<EventNames>),
+    Ids(Vec<EventNames>),
 }
 
 #[derive(Serialize)]
 #[serde(tag = "action", rename_all = "camelCase")]
-enum Action {
+pub enum Action {
     Echo {
         payload: serde_json::Value,
         service: Service,
@@ -137,15 +133,13 @@ where
     json!(["all"]).serialize(serializer)
 }
 
-fn serialize_ids_subscription<S>(value: &HashSet<Id>, serializer: S) -> Result<S::Ok, S::Error>
+fn serialize_ids_subscription<S>(value: &Vec<Id>, serializer: S) -> Result<S::Ok, S::Error>
 where
     S: serde::Serializer,
 {
-    use std::collections::HashSet;
-
-    let mut ids = HashSet::with_capacity(value.len());
+    let mut ids = Vec::with_capacity(value.len());
     for id in value.iter() {
-        ids.insert(id.to_string());
+        ids.push(id.to_string());
     }
 
     serializer.collect_seq(ids.iter())
@@ -178,10 +172,9 @@ mod tests {
 
     #[test]
     fn serialize_clearsubscribe_action() {
-        // FIXME: This is sensitive to order of HashSet / JSON array
         let input = Action::ClearSubscribe {
             all: None,
-            event_names: Some(EventSubscription::Ids(hashset!{
+            event_names: Some(EventSubscription::Ids(vec![
                 EventNames::PlayerLogin,
                 EventNames::MetagameEvent,
                 EventNames::BattleRankUp,
@@ -194,12 +187,12 @@ mod tests {
                 EventNames::GainExperience,
                 EventNames::Death,
                 EventNames::PlayerLogout,
-            })),
-            characters: Some(CharacterSubscription::Ids(hashset!{1, 2})),
-            worlds: Some(WorldSubscription::Ids(hashset!{
+            ])),
+            characters: Some(CharacterSubscription::Ids(vec![1, 2])),
+            worlds: Some(WorldSubscription::Ids(vec![
                 WorldIds::Cobalt as WorldId,
                 WorldIds::Jaeger as WorldId,
-            })),
+            ])),
             service: Service::Event,
         };
         let v = serde_json::to_value(input).unwrap();
