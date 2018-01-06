@@ -8,12 +8,6 @@ pub type ExperienceId = Id;
 
 pub type Timestamp = u64;
 
-pub enum Environment {
-    Pc,
-    Ps4Us,
-    Ps4Eu,
-}
-
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub enum Service {
