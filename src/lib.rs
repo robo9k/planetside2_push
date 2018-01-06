@@ -14,6 +14,7 @@ impl<'a> ServiceId<'a> {
 
     pub const EXAMPLE: ServiceId<'static> = ServiceId(ServiceId::EXAMPLE_ID);
 
+    // TODO: FromStr
     pub fn new(service_id: &str) -> Result<ServiceId, ()> {
         if service_id.starts_with("s:") {
             Ok(ServiceId(service_id))
