@@ -8,9 +8,6 @@ pub type ExperienceId = Id;
 
 pub type Timestamp = u64;
 
-// TODO: s:example
-pub type ServiceId = String;
-
 pub enum Environment {
     Pc,
     Ps4Us,
