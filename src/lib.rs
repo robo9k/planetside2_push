@@ -84,7 +84,7 @@ mod tests {
     fn websocket_endpoint() {
         let address = super::websocket_endpoint(Environment::Pc, &ServiceId::EXAMPLE);
         let expected = websocket::url::Url::parse(
-            "wss://push.planetside2.com/streaming?environment=ps2&service-id=s:example",
+            "wss://push.planetside2.com/streaming?environment=ps2&service-id=s%3Aexample",
         ).unwrap();
         assert_eq!(address, expected);
     }
