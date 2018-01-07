@@ -1,19 +1,7 @@
 use serde;
 use serde_json;
 
-pub type Id = u64;
-pub type CharacterId = Id;
-pub type WorldId = Id;
-pub type ExperienceId = Id;
-
-pub type Timestamp = u64;
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-pub enum Service {
-    Event,
-    Push,
-}
+use {CharacterId, ExperienceId, Id, Service, WorldId};
 
 #[derive(Serialize)]
 #[serde(untagged)]

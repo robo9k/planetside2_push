@@ -6,6 +6,21 @@ extern crate serde_json;
 extern crate websocket;
 
 pub mod request;
+pub mod response;
+
+pub type Id = u64;
+pub type CharacterId = Id;
+pub type WorldId = Id;
+pub type ExperienceId = Id;
+
+pub type Timestamp = u64;
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub enum Service {
+    Event,
+    Push,
+}
 
 pub struct ServiceId<'a>(&'a str);
 
@@ -15,6 +30,7 @@ impl<'a> ServiceId<'a> {
     pub const EXAMPLE: ServiceId<'static> = ServiceId(ServiceId::EXAMPLE_ID);
 
     // TODO: FromStr
+    // TODO: AsRef<str>
     pub fn new(service_id: &str) -> Result<ServiceId, ()> {
         if service_id.starts_with("s:") {
             Ok(ServiceId(service_id))
