@@ -23,8 +23,10 @@ pub enum Event {
 #[serde(rename_all = "camelCase")]
 pub struct Subscription {
     pub character_count: u64,
+    // TODO: request::EventNames minus GainExperienceId
     pub event_names: Vec<String>,
     pub logical_and_characters_with_worlds: bool,
+    // TODO: request::WorldSubscription
     pub worlds: Vec<String>,
 }
 
@@ -35,6 +37,7 @@ pub enum Message {
         #[serde(deserialize_with = "deserialize_fromstr")] connected: bool,
     },
     Heartbeat {
+        // TODO: EventServerEndpoint / WorldId / request::WorldIds -> bool
         online: HashMap<String, String>,
     },
     ServiceMessage {
@@ -42,6 +45,7 @@ pub enum Message {
     },
     ServiceStateChanged {
         #[serde(deserialize_with = "deserialize_fromstr")] online: bool,
+        // TODO: EventServerEndpoint / WorldId / request::WorldIds
         detail: String,
     },
     Subscription {
